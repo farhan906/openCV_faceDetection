@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Recognition Attendance</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <style>
+        .container {
+            margin-top: 50px;
+        }
+        .video-container {
+            width: 40%;
+            display: inline-block;
+            vertical-align: top;
+        }
+        video {
+            width: 100%;
+            height: auto;
+        }
+        .table-container {
+            width: 55%;
+            display: inline-block;
+            vertical-align: top;
+            margin-left: 5%;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        @media (max-width: 768px) {
+            .video-container, .table-container {
+                display: block;
+                width: 100%;
+                text-align: center;
+            }
+            .table-container {
+                margin-top: 20px;
+                margin-left: 0;
+            }
+            button {
+                display: block;
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center">Face Recognition Attendance</h1>
+        <div class="d-flex justify-content-between mt-5">
+            <div class="video-container text-left">
+                <video id="video" autoplay></video>
+                <button id="capture" class="btn btn-primary mt-3">Capture & Recognize</button>
+            </div>
+            <div class="table-container">
+                <div id="result"></div>
+                <table class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Person Name</th>
+                            <th>Occupation</th>
+                            <th>Registered Datetime</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendance_table">
+                        <!-- Attendance records will be added here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                video.srcObject = stream;
+                video.play();
+            });
+        }
+
+        document.getElementById('capture').addEventListener('click', function() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const dataURL = canvas.toDataURL('image/jpeg');
+
+            fetch('/capture_and_recognize', {
+                method: 'POST',
+                body: JSON.stringify({ image: dataURL }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('result').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                } else {
+                    const table = document.getElementById('attendance_table');
+                    const row = document.createElement('tr');
+                    row.innerHTML = `<td>${data.prs_name}</td><td>${data.prs_occup}</td><td>${data.registered_datetime}</td>`;
+                    table.appendChild(row);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        // Load attendance history on page load
+        window.onload = function() {
+            fetch('/attendance_history')
+                .then(response => response.json())
+                .then(data => {
+                    const table = document.getElementById('attendance_table');
+                    data.forEach(record => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td>${record[0]}</td><td>${record[1]}</td><td>${record[2]}</td>`;
+                        table.appendChild(row);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        };
+    </script>
+</body>
+</html>

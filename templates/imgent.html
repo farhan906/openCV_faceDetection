@@ -30,7 +30,6 @@
         .btn-primary {
             margin-top: 20px; 
         }
-
         @media (max-width: 768px) {
             .video-container, .form-container {
                 display: block;
@@ -51,7 +50,7 @@
                 <video id="video" autoplay></video>
             </div>
             <div class="form-container">
-                <form action="/start_capture" method="post" class="form-inline justify-content-end flex-column">
+                <form id="personForm">
                     <div class="form-group1">
                         <label for="person_name" class="mr-2">Person Name:</label>
                         <input type="text" name="person_name" id="person_name" class="form-control" required>
@@ -60,7 +59,7 @@
                         <label for="occupation" class="mr-2">Occupation:</label>
                         <input type="text" name="occupation" id="occupation" class="form-control" required>
                     </div>
-                    <button type="submit" class="btn btn-primary">Start Capture</button>
+                    <button type="submit" class="btn btn-primary">Submit</button>
                 </form>
             </div>
         </div>
@@ -68,6 +67,7 @@
 
     <script>
         const video = document.getElementById('video');
+        let capturedImage = null;
 
         if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
             navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
@@ -75,6 +75,39 @@
                 video.play();
             });
         }
+
+        function captureImage() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL('image/jpeg');
+        }
+
+        video.addEventListener('play', function() {
+            const interval = setInterval(function() {
+                capturedImage = captureImage(); // Capture image from the video
+            }, 1000); // Capture an image every 1 second
+
+            document.getElementById('personForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData();
+                formData.append('person_name', document.getElementById('person_name').value);
+                formData.append('occupation', document.getElementById('occupation').value);
+                formData.append('image', capturedImage);
+
+                fetch('/start_capture', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.text())  // Get the plain text response
+                .then(data => {
+                    alert(data);  // Show the plain text response in the alert
+                })
+                .catch(error => console.error('Error:', error));
+            });
+
+        });
     </script>
 </body>
 </html>

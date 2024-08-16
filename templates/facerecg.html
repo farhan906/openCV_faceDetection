@@ -13,13 +13,14 @@
             width: 40%;
             display: inline-block;
             vertical-align: top;
+    
         }
         video {
             width: 100%;
             height: auto;
         }
         .table-container {
-            width: 55%;
+            width: 40%;
             display: inline-block;
             vertical-align: top;
             margin-left: 5%;
@@ -54,8 +55,7 @@
         <h1 class="text-center">Face Recognition Attendance</h1>
         <div class="d-flex justify-content-between mt-5">
             <div class="video-container text-left">
-                <video id="video" autoplay></video>
-                <button id="capture" class="btn btn-primary mt-3">Capture & Recognize</button>
+                <img id="video" src="/video_feed" alt="Video Feed" />
             </div>
             <div class="table-container">
                 <div id="result"></div>
@@ -76,50 +76,20 @@
     </div>
 
     <script>
-        const video = document.getElementById('video');
-
-        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-            navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-                video.srcObject = stream;
-                video.play();
-            });
-        }
-
-        document.getElementById('capture').addEventListener('click', function() {
-            const canvas = document.createElement('canvas');
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-
-            const dataURL = canvas.toDataURL('image/jpeg');
-
-            fetch('/capture_and_recognize', {
-                method: 'POST',
-                body: JSON.stringify({ image: dataURL }),
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    document.getElementById('result').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
-                } else {
-                    const table = document.getElementById('attendance_table');
-                    const row = document.createElement('tr');
-                    row.innerHTML = `<td>${data.prs_name}</td><td>${data.prs_occup}</td><td>${data.registered_datetime}</td>`;
-                    table.appendChild(row);
-                }
-            })
-            .catch(error => console.error('Error:', error));
-        });
-
         // Load attendance history on page load
         window.onload = function() {
+            fetchAttendance();
+        };
+
+        // Auto-refresh attendance history every 10 seconds
+        setInterval(fetchAttendance, 10000);
+
+        function fetchAttendance() {
             fetch('/attendance_history')
                 .then(response => response.json())
                 .then(data => {
                     const table = document.getElementById('attendance_table');
+                    table.innerHTML = '';  // Clear the existing table contents
                     data.forEach(record => {
                         const row = document.createElement('tr');
                         row.innerHTML = `<td>${record[0]}</td><td>${record[1]}</td><td>${record[2]}</td>`;
@@ -127,7 +97,7 @@
                     });
                 })
                 .catch(error => console.error('Error:', error));
-        };
+        }
     </script>
 </body>
 </html>

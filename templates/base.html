@@ -5,8 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Face Recognition App{% endblock %}</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        /* Custom styles for the h1 element */
+        .heading {
+            font-size: 2.5rem; /* Size of the font */
+            color: #343a40; /* Dark grey color */
+            text-align: left; /* Center align the text */
+            margin-top: 20px; /* Space above the heading */
+            margin-bottom: 20px; /* Space below the heading */
+            font-weight: bold; /* Bold text */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); /* Shadow for a subtle 3D effect */
+        }
+    </style>
 </head>
 <body>
+    <h1 class="heading">OpenCV Face Recognition System - Attendance Management</h1>
     <nav class="navbar navbar-expand-lg navbar-light bg-light">
         <a class="navbar-brand" href="{{ url_for('home') }}">Home</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">

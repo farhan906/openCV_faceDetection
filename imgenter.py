@@ -1,20 +1,16 @@
 import cv2
 import os
 import base64
-import mysql.connector
 import numpy as np
+import face_recognition
 from flask import Flask, render_template, request, redirect, url_for, flash, Blueprint
+import mysql.connector
 
 imgenter = Blueprint('imgenter', __name__)
 
 # Ensure the dataset directory exists
 if not os.path.exists('dataset'):
     os.makedirs('dataset')
-
-# Load the pre-trained Caffe model for face detection
-prototxt_path = "C:/Users/FARHAN/Desktop/vscode@/architecture.txt"
-caffemodel_path = "C:/Users/FARHAN/Desktop/vscode@/weights.caffemodel"
-net = cv2.dnn.readNetFromCaffe(prototxt_path, caffemodel_path)
 
 # Database connection
 def get_db_connection():
@@ -36,22 +32,18 @@ def save_image(image_base64, person_name):
         f.write(image_data)
     return file_name_path
 
-# Function to detect faces using the Caffe model
+# Function to detect faces using face_recognition
 def detect_face(image_path):
-    image = cv2.imread(image_path)
-    (h, w) = image.shape[:2]
-    blob = cv2.dnn.blobFromImage(cv2.resize(image, (300, 300)), 1.0, (300, 300), (104.0, 177.0, 123.0))
+    image = face_recognition.load_image_file(image_path)
+    face_locations = face_recognition.face_locations(image)
     
-    net.setInput(blob)
-    detections = net.forward()
-
-    for i in range(0, detections.shape[2]):
-        confidence = detections[0, 0, i, 2]
-        if confidence > 0.5:
-            box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-            (startX, startY, endX, endY) = box.astype("int")
-            face = image[startY:endY, startX:endX]
-            return face
+    if face_locations:
+        # Crop the first detected face
+        top, right, bottom, left = face_locations[0]
+        face = image[top:bottom, left:right]
+        # Convert the face to BGR format for saving with OpenCV
+        face_bgr = cv2.cvtColor(face, cv2.COLOR_RGB2BGR)
+        return face_bgr
     return None
 
 @imgenter.route('/')

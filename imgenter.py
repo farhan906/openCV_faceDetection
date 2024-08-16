@@ -3,7 +3,9 @@ import os
 import base64
 import mysql.connector
 import numpy as np
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, Blueprint
+
+imgenter = Blueprint('imgenter', __name__)
 
 # Ensure the dataset directory exists
 if not os.path.exists('dataset'):
@@ -12,7 +14,6 @@ if not os.path.exists('dataset'):
 # Load the pre-trained Caffe model for face detection
 prototxt_path = "C:/Users/FARHAN/Desktop/vscode@/architecture.txt"
 caffemodel_path = "C:/Users/FARHAN/Desktop/vscode@/weights.caffemodel"
-
 net = cv2.dnn.readNetFromCaffe(prototxt_path, caffemodel_path)
 
 # Database connection
@@ -23,9 +24,6 @@ def get_db_connection():
         passwd="",
         database="flask_db"
     )
-
-imgenter = Flask(__name__)
-imgenter.secret_key = 'supersecretkey'  # For flashing messages
 
 # Function to decode base64 image and save it
 def save_image(image_base64, person_name):
@@ -91,7 +89,3 @@ def start_capture():
         return f"Image saved successfully as {face_path}", 200
     except Exception as e:
         return f"Error inserting into database: {e}", 500
-
-
-if __name__ == "__main__":
-    imgenter.run(host='127.0.0.1', port=5000, debug=True)

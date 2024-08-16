@@ -3,8 +3,10 @@ import numpy as np
 import os
 import face_recognition
 from datetime import datetime
-from flask import Flask, render_template, jsonify, Response
+from flask import Flask, render_template, jsonify, Response, Blueprint
 import mysql.connector
+
+facerecog = Blueprint('facerecog', __name__)
 
 # Database connection
 def get_db_connection():
@@ -15,9 +17,6 @@ def get_db_connection():
         database="flask_db"
     )
 
-app = Flask(__name__)
-
-# Track recognized persons to avoid duplicate entries
 recognized_persons = set()
 
 def compare_faces(stored_face_path, live_face_encoding):
@@ -28,7 +27,6 @@ def compare_faces(stored_face_path, live_face_encoding):
         return False
     
     stored_face_encoding = stored_face_encoding[0]
-    # Compare using face_recognition library
     matches = face_recognition.compare_faces([stored_face_encoding], live_face_encoding)
     return matches[0]
 
@@ -66,7 +64,7 @@ def generate_frames():
             mydb.close()
 
         # Show the camera feed
-        cv2.imshow('Camera Feed', frame)
+        # cv2.imshow('Camera Feed', frame)
 
         ret, buffer = cv2.imencode('.jpg', frame)
         frame = buffer.tobytes()
@@ -80,15 +78,15 @@ def generate_frames():
     cv2.destroyAllWindows()
     recognized_persons.clear()
 
-@app.route('/')
+@facerecog.route('/')
 def home():
     return render_template('facerecg.html')
 
-@app.route('/video_feed')
+@facerecog.route('/video_feed')
 def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
-@app.route('/attendance_history', methods=['GET'])
+@facerecog.route('/attendance_history', methods=['GET'])
 def attendance_history():
     mydb = get_db_connection()
     mycursor = mydb.cursor()
@@ -97,6 +95,3 @@ def attendance_history():
     mycursor.close()
     mydb.close()
     return jsonify(data)
-
-if __name__ == "__main__":
-    app.run(host='127.0.0.1', port=5000, debug=True)

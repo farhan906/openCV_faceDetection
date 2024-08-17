@@ -12,6 +12,8 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+$message = "";
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $personName = $_POST['person_name'];
     $occupation = $_POST['occupation'];
@@ -22,9 +24,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $imageName = basename($_FILES['image']['name']);
         $extension = pathinfo($imageName, PATHINFO_EXTENSION);
         $newImageName = $personName . "_face." . $extension;
-        $uploadDir = 'dataset/';
-        $dest_path = $uploadDir . $newImageName;
 
+        
         $uploadDir = 'C:/Users/FARHAN/Desktop/vscode@/dataset/';
         $relativePath = 'dataset/' . $newImageName;
         $dest_path = $uploadDir . $newImageName;
@@ -32,24 +33,23 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (move_uploaded_file($imageTmpPath, $dest_path)) {
             $imgPersonPath = $relativePath;
 
-            // Insert data into img_dataset table
+            
             $sql = "INSERT INTO img_dataset (prs_name, prs_occup, img_person) VALUES ('$personName', '$occupation', '$imgPersonPath')";
             
             if ($conn->query($sql) === TRUE) {
-                echo "New record created successfully";
+                $message = "New record created successfully";
             } else {
-                echo "Error: " . $sql . "<br>" . $conn->error;
+                $message = "Error: " . $sql . "<br>" . $conn->error;
             }
         } else {
-            echo "Error uploading the image.";
+            $message = "Error uploading the image.";
         }
-
-
     }
 }
 
 $conn->close();
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -101,13 +101,20 @@ $conn->close();
             width: 50%;
         }
         .heading1 {
-            font-size: 2.5rem; /* Size of the font */
-            color: #343a40; /* Dark grey color */
-            text-align: left; /* Center align the text */
-            margin-top: 20px; /* Space above the heading */
-            margin-bottom: 20px; /* Space below the heading */
-            font-weight: bold; /* Bold text */
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1); /* Shadow for a subtle 3D effect */
+            font-size: 2.5rem;
+            color: #343a40;
+            text-align: left;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .message {
+            text-align: center;
+            margin-top: 20px;
+            color: #20c997;
+            font-weight: bold;
+            font-size: 1.5rem;
         }
     </style>
 </head>
@@ -115,7 +122,8 @@ $conn->close();
 <h1 class="heading1">OpenCV Face Recognition System - Attendance Management</h1>
 <h3 style="font-size: 2.5rem; color: #20c997; text-align: center; margin-top: 80px; margin-bottom: 20px; font-weight: bold;">
         Admin Panel
-    </h3>
+</h3>
+
 <div class="container">
     <div class="form-container">
         <form action="admin.php" method="post" enctype="multipart/form-data">
@@ -131,8 +139,14 @@ $conn->close();
         <input type="file" name="image" id="image" required>
         <button type="submit">Submit</button>
         </form>
+
+        
+        <?php if (!empty($message)): ?>
+            <div class="message"><?php echo $message; ?></div>
+        <?php endif; ?>
     </div>
 </div>
 
 </body>
 </html>
+

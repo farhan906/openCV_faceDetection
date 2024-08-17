@@ -29,6 +29,13 @@
         margin-top: 20px; 
     }
 
+    .message {
+        text-align: center;
+        margin-top: 20px;
+        color: #20c997;
+        font-weight: bold;
+    }
+
     @media (max-width: 768px) {
         .video-container, .form-container {
             display: block;
@@ -60,18 +67,33 @@
                 <input type="hidden" name="image" id="image">
                 <button type="submit" class="btn btn-primary" onclick="captureImage()">Submit</button>
             </form>
+
+            {% if message %}
+            <div class="message">{{ message }}</div>
+            {% endif %}
         </div>
     </div>
 </div>
 
 <script>
-    const video = document.getElementById('video');
+    let stream = null;
 
-    if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
-        navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-            video.srcObject = stream;
-            video.play();
-        });
+    function startCamera() {
+        if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true }).then(function(cameraStream) {
+                stream = cameraStream;
+                document.getElementById('video').srcObject = stream;
+            }).catch(function(error) {
+                console.error('Error accessing the camera: ', error);
+            });
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+        }
     }
 
     function captureImage() {
@@ -90,5 +112,8 @@
             alert("Please capture the image before submitting the form.");
         }
     });
+
+    window.addEventListener('load', startCamera);
+    window.addEventListener('beforeunload', stopCamera);
 </script>
 {% endblock %}

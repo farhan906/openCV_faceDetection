@@ -57,7 +57,7 @@ def start_capture():
     image_base64 = request.form.get('image')
 
     if not person_name or not occupation or not image_base64:
-        return "Error: All fields are required.", 400
+        return render_template('imgent.html', message="Error: All fields are required.")
 
     file_name_path = save_image(image_base64, person_name)
 
@@ -68,7 +68,7 @@ def start_capture():
         face_path = f"dataset/{person_name}_face.jpg"
         cv2.imwrite(face_path, face)
     else:
-        return "No face detected.", 400
+        return render_template('imgent.html', message="No face detected.")
 
     try:
         mydb = get_db_connection()
@@ -78,6 +78,7 @@ def start_capture():
         mydb.commit()
         mycursor.close()
         mydb.close()
-        return f"Image saved successfully as {face_path}", 200
+        return render_template('imgent.html', message=f"Image saved successfully as {face_path}")
     except Exception as e:
-        return f"Error inserting into database: {e}", 500
+        return render_template('imgent.html', message=f"Error inserting into database: {e}")
+

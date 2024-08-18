@@ -119,7 +119,7 @@ $conn->close();
     </style>
 </head>
 <body>
-<h1 class="heading1">OpenCV Face Recognition System - Attendance Management</h1>
+<h1 class="heading1">OpenCV Face Recognition - Attendance Management System</h1>
 <h3 style="font-size: 2.5rem; color: #20c997; text-align: center; margin-top: 80px; margin-bottom: 20px; font-weight: bold;">
         Admin Panel
 </h3>

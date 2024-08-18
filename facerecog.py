@@ -33,50 +33,50 @@ def compare_faces(stored_face_path, live_face_encoding):
 def generate_frames():
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
 
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            break
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
 
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        face_locations = face_recognition.face_locations(rgb_frame)
-        face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            face_locations = face_recognition.face_locations(rgb_frame)
+            face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
 
-        for face_encoding, face_location in zip(face_encodings, face_locations):
-            top, right, bottom, left = face_location
-            cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+            for face_encoding, face_location in zip(face_encodings, face_locations):
+                top, right, bottom, left = face_location
+                cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
 
-            mydb = get_db_connection()
-            mycursor = mydb.cursor()
-            mycursor.execute("SELECT prs_name, prs_occup, img_person FROM img_dataset")
-            results = mycursor.fetchall()
+                mydb = get_db_connection()
+                mycursor = mydb.cursor()
+                mycursor.execute("SELECT prs_name, prs_occup, img_person FROM img_dataset")
+                results = mycursor.fetchall()
 
-            for (prs_name, prs_occup, img_person) in results:
-                if prs_name not in recognized_persons and compare_faces(img_person, face_encoding):
-                    recognized_persons.add(prs_name)
-                    registered_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    mycursor.execute("INSERT INTO atten_hist (prs_name, prs_occup, registered) VALUES (%s, %s, %s)",
-                                     (prs_name, prs_occup, registered_datetime))
-                    mydb.commit()
-                    break  # Stop after the first match
+                for (prs_name, prs_occup, img_person) in results:
+                    if prs_name not in recognized_persons and compare_faces(img_person, face_encoding):
+                        recognized_persons.add(prs_name)
+                        registered_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        mycursor.execute("INSERT INTO atten_hist (prs_name, prs_occup, registered) VALUES (%s, %s, %s)",
+                                         (prs_name, prs_occup, registered_datetime))
+                        mydb.commit()
+                        break  # Stop after the first match
 
-            mycursor.close()
-            mydb.close()
+                mycursor.close()
+                mydb.close()
 
-        # Show the camera feed
-        # cv2.imshow('Camera Feed', frame)
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-        ret, buffer = cv2.imencode('.jpg', frame)
-        frame = buffer.tobytes()
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+        recognized_persons.clear()
 
-    cap.release()
-    cv2.destroyAllWindows()
-    recognized_persons.clear()
 
 @facerecog.route('/')
 def home():

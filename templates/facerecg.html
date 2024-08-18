@@ -60,7 +60,7 @@
                     <tr>
                         <th>Person Name</th>
                         <th>Occupation</th>
-                        <th>Registered Datetime</th>
+                        <th>Attendance Datetime</th>
                     </tr>
                 </thead>
                 <tbody id="attendance_table">
@@ -72,10 +72,15 @@
 </div>
 
 <script>
-    // Load attendance history on page load
-    window.onload = function() {
-        fetchAttendance();
-    };
+    // Reload video feed on page load
+    function refreshVideoFeed() {
+        const videoElement = document.getElementById('video');
+        const currentSrc = videoElement.src;
+        videoElement.src = '';  // Clear the src to stop the current feed
+        videoElement.src = currentSrc;  // Reset the src to reload the feed
+    }
+
+    window.addEventListener('load', refreshVideoFeed);
 
     // Auto-refresh attendance history every 10 seconds
     setInterval(fetchAttendance, 10000);
@@ -94,5 +99,11 @@
             })
             .catch(error => console.error('Error:', error));
     }
+
+    // Stop the video feed when the page is unloaded
+    window.addEventListener('beforeunload', function () {
+        const videoElement = document.getElementById('video');
+        videoElement.src = '';  // Clear the src to stop the current feed
+    });
 </script>
 {% endblock %}

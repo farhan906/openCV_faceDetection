@@ -2,7 +2,9 @@ from flask import Flask, render_template
 from imgenter import imgenter
 from facerecog import facerecog
 
+
 app = Flask(__name__)
+
 
 # Register Blueprints
 app.register_blueprint(imgenter, url_prefix='/imgenter')

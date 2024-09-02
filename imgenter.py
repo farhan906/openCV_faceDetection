@@ -36,6 +36,7 @@ def save_image(image_base64, person_name):
 def detect_face(image_path, person_name):
     image = face_recognition.load_image_file(image_path)
     face_locations = face_recognition.face_locations(image)
+
     
     if face_locations:
         # Crop the first detected face

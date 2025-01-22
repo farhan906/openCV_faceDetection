@@ -11,11 +11,13 @@
         Use the navigation menu to add a person or start face recognition.
     </p>
     <p style="font-size: 1.25rem; margin-top: 5%; color: #343a40; text-align: justify; line-height: 1.6;">
-        The project aims to build a real-time face recognition system leveraging computer vision techniques.
-        The core of the system is based on OpenCV for video capture and image processing, and the face_recognition
-        library for facial feature extraction and matching. The system is designed to identify individuals from
-        a pre-defined dataset and mark attendance automatically, making it suitable for use in 
-        educational institutions, workplaces, and security monitering.
+        Using facial recognition technology, this real-time attendance monitoring system is
+        intended to automate the process of recording attendance. This project records live
+        video feeds, finds faces inside the frames, then compares those faces to a database of
+        people who are already defined. The system makes use of OpenCV for video capture, the haarcascade
+        classifier for face detection and DeepFace's FaceNet512 model for effective face encoding.
+        The system effectively matches the identified faces with the stored data by utilising
+        cosine_similarity, offering a quick and effective way to recognise faces in real time. 
     </p>
     
 </div>

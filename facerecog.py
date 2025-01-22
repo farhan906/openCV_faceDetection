@@ -1,16 +1,13 @@
 import cv2
-import numpy as np
-import os
 from flask import Flask, render_template, jsonify, Response, Blueprint
 import mysql.connector
 from datetime import datetime
 from deepface import DeepFace
 from sklearn.metrics.pairwise import cosine_similarity
-import face_recognition
+import time
 
 facerecog = Blueprint('facerecog', __name__)
 
-# Database connection
 def get_db_connection():
     return mysql.connector.connect(
         host="localhost",
@@ -30,7 +27,7 @@ def load_known_faces():
     
     for prs_name, prs_occup, img_person in results:
         image_bgr = cv2.imread(img_person)
-        face_encoding = DeepFace.represent(image_bgr, model_name="Facenet", enforce_detection=False)
+        face_encoding = DeepFace.represent(image_bgr, model_name="Facenet512", enforce_detection=False)
         
         if face_encoding:
             face_encoding = face_encoding[0]["embedding"]
@@ -42,61 +39,67 @@ def load_known_faces():
     mydb.close()
     return known_faces
 
-
 known_faces = load_known_faces()
 
 def compare_faces(known_faces, live_face_encoding):
     best_match_name = None
     best_match_occup = None
-    best_similarity = 0  # Initialize the best similarity as 0
+    best_similarity = 0
 
     for prs_name, prs_occup, stored_face_encoding in known_faces:
         similarity = cosine_similarity([stored_face_encoding], [live_face_encoding])[0][0]
         
-        # Keep track of the best match found
+        
         if similarity > best_similarity:
             best_similarity = similarity
             best_match_name = prs_name
             best_match_occup = prs_occup
     
-    # Only return the best match if it exceeds a threshold
-    if best_similarity > 0.65:  # Adjust the threshold as needed
+    
+    if best_similarity > 0.7:  # Adjust the threshold as needed
         return best_match_name, best_match_occup
     else:
         return None, None
 
-
 def generate_frames():
     cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    
-    # Lower the resolution to speed up processing
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
+    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+    last_update = time.time()
+    update_interval = 120  # Reload known faces every 60 seconds
 
     try:
         while True:
             ret, frame = cap.read()
             if not ret:
+                print("Failed to grab frame")
                 break
 
-            # Convert to RGB
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            face_locations = face_recognition.face_locations(rgb_frame)
-            faces = [frame[top:bottom, left:right] for top, right, bottom, left in face_locations]
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            face_locations = face_cascade.detectMultiScale(gray_frame, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
 
-            for face, face_location in zip(faces, face_locations):
-                # Skip small faces to increase speed
+            # Reload known faces if the interval has passed
+            if time.time() - last_update > update_interval:
+                global known_faces
+                known_faces = load_known_faces()
+                last_update = time.time()
+
+            for (x, y, w, h) in face_locations:
+                face = frame[y:y+h, x:x+w]
+
                 if face.shape[0] < 20 or face.shape[1] < 20:
                     continue
 
-                face_encoding = DeepFace.represent(face, model_name="Facenet", enforce_detection=False)
-                
+                face_encoding = DeepFace.represent(face, model_name="Facenet512", enforce_detection=False)
+
                 if face_encoding:
                     face_encoding = face_encoding[0]["embedding"]
                     prs_name, prs_occup = compare_faces(known_faces, face_encoding)
 
-                    top, right, bottom, left = face_location
-                    cv2.rectangle(frame, (left, top), (right, bottom), (255, 0, 0), 2)
+                    cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
 
                     if prs_name and prs_name not in recognized_persons:
                         recognized_persons.add(prs_name)
@@ -109,20 +112,14 @@ def generate_frames():
                         mycursor.close()
                         mydb.close()
 
-            # Encode the frame as a JPEG and yield it
             ret, buffer = cv2.imencode('.jpg', frame)
             frame = buffer.tobytes()
             yield (b'--frame\r\n'
                    b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
-
     finally:
         cap.release()
-        cv2.destroyAllWindows()
         recognized_persons.clear()
-
 
 
 @facerecog.route('/')
@@ -137,9 +134,12 @@ def video_feed():
 def attendance_history():
     mydb = get_db_connection()
     mycursor = mydb.cursor()
-    # Limit the number of records to improve performance (you can adjust the limit as needed)
     mycursor.execute("SELECT prs_name, prs_occup, registered FROM atten_hist ORDER BY registered DESC LIMIT 100")
     data = mycursor.fetchall()
     mycursor.close()
     mydb.close()
     return jsonify(data)
+
+
+
+

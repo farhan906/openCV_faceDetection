@@ -6,7 +6,6 @@ from facerecog import facerecog
 app = Flask(__name__)
 
 
-# Register Blueprints
 app.register_blueprint(imgenter, url_prefix='/imgenter')
 app.register_blueprint(facerecog, url_prefix='/facerecog')
 
